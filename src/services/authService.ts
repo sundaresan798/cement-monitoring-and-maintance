@@ -13,6 +13,7 @@
 
 import { User } from '../types';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 const TOKEN_KEY = 'cement_plant_auth_token';
 const REMEMBER_KEY = 'cement_plant_remember_me';
 
@@ -59,7 +60,7 @@ export const authService = {
   // Login request
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -86,7 +87,7 @@ export const authService = {
     role: string;
   }): Promise<RegisterResponse> {
     try {
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -112,7 +113,7 @@ export const authService = {
     }
 
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -138,7 +139,7 @@ export const authService = {
     if (!token) return { success: false, message: 'Not authenticated' };
 
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

@@ -10,7 +10,10 @@
  */
 
 import express from 'express';
+import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { connectDB, getDBStatus } from './server/config/db';
 import { seedInitialUsers } from './server/seed/seedUsers';
@@ -20,8 +23,19 @@ import dataRoutes from './server/routes/dataRoutes';
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+// Enable Cross-Origin Resource Sharing (CORS) for Vercel frontend & dev clients
+app.use(cors({
+  origin: true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Body parser
 app.use(express.json());
@@ -32,6 +46,20 @@ app.get('/api/health', (req, res) => {
     status: 'online',
     system: 'Cement Plant SCADA Monitoring Backend',
     database: getDBStatus(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Root API info endpoint
+app.get('/', (req, res, next) => {
+  const distIndexPath = path.resolve(__dirname, 'dist', 'index.html');
+  if (fs.existsSync(distIndexPath)) {
+    return next();
+  }
+  res.json({
+    name: 'Cement Plant Centralized Monitoring API Server',
+    status: 'running',
+    healthCheck: '/api/health',
     timestamp: new Date().toISOString()
   });
 });
@@ -48,8 +76,8 @@ async function startServer() {
   // 2. Seed initial demo users with bcrypt passwords
   await seedInitialUsers();
 
-  // 3. Mount Vite middleware in development
-  if (process.env.NODE_ENV !== 'production') {
+  // 3. Mount Vite middleware in development or static serving in production
+  if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: {
@@ -62,11 +90,16 @@ async function startServer() {
     app.use(vite.middlewares);
     console.log('[Vite] Development middleware mounted successfully.');
   } else {
-    // Production static file serving
-    app.use(express.static(path.resolve(__dirname, 'dist')));
-    app.get('*', (req, res) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
-    });
+    // Production static file serving if dist exists
+    const distPath = path.resolve(__dirname, 'dist');
+    const distIndexPath = path.resolve(distPath, 'index.html');
+    if (fs.existsSync(distIndexPath)) {
+      app.use(express.static(distPath));
+      app.get('*', (req, res) => {
+        res.sendFile(distIndexPath);
+      });
+      console.log('[Server] Serving production frontend build from dist/');
+    }
   }
 
   // 4. Start Listening on Port 3000
