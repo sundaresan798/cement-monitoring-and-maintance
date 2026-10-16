@@ -6,3 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
+powershell.cmd
+setup_node.ps1

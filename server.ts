@@ -26,12 +26,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 // Body parser
 app.use(express.json());
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api', dataRoutes);
-
-// Health check & database connection status
+// Health check & database connection status (public)
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
@@ -40,6 +35,11 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api', dataRoutes);
 
 async function startServer() {
   // 1. Initialize Database connection
